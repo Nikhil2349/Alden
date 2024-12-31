@@ -6,8 +6,10 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import openai
 import numpy as np
+import os
 
-openai.api_key = "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"
+
+openai.api_key = os.getenv("openai")
 
 app = Flask(__name__, template_folder='.')
 
@@ -99,5 +101,6 @@ def get_similarities():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
