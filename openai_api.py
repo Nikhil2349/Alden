@@ -92,16 +92,19 @@ else:
     print("Loading precomputed embeddings...")
     df = pd.read_json('dataset_with_embeddings.json')
 
-# Similarity function
+# Similarity function to calculate cosine similarity
 def get_top_5_similarities(sector, input_text):
+    # Preprocess input text
     input_combined = preprocess_text(sector + " " + input_text)
     input_embedding = get_embedding(input_combined)
-    
+
+    # Compute cosine similarity between input text embedding and dataset embeddings
     df['similarity'] = df['embedding'].apply(
         lambda x: (np.dot(input_embedding, x) / 
                    (np.linalg.norm(input_embedding) * np.linalg.norm(x)) if np.linalg.norm(x) > 0 else 0) * 100
     )
-    df['similarity'] = df['similarity'].clip(0, 100)
+    
+    # Sort by similarity and return the top 5
     top_5_results = df.nlargest(5, 'similarity')
     return top_5_results[['lead', 'Overview', 'similarity']]
 
