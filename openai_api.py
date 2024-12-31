@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+import requests
 import pandas as pd
+import io
 import re
 import nltk
 from nltk.corpus import stopwords
@@ -7,46 +8,46 @@ from nltk.stem import WordNetLemmatizer
 import openai
 import numpy as np
 import os
-import requests
-from flask_cors import CORS
 
-# Enable CORS for all routes and origins
-app = Flask(__name__, template_folder='.')
-CORS(app)  # This line enables CORS
-
-# OpenAI API key
+# Ensure to have your OpenAI API key
 openai.api_key = os.getenv("openai")
 
+# Initialize Flask app
+from flask import Flask, request, jsonify, render_template
+
+app = Flask(__name__, template_folder='.')
+
+# Function to fetch dataset from GitHub
 def fetch_dataset():
     url = "https://raw.githubusercontent.com/Nikhil2349/Alden/main/Alden_clients.csv"
     response = requests.get(url)
     if response.status_code == 200:
-        df = pd.read_csv(pd.compat.StringIO(response.text))
-        print("Columns in the dataset:", df.columns)  # Debugging line
+        # Use io.StringIO instead of pandas.compat.StringIO
+        df = pd.read_csv(io.StringIO(response.text))
+        print("Columns in the dataset:", df.columns)  # Print columns for debugging
         return df
     else:
         raise Exception("Failed to fetch dataset from GitHub")
 
-# Load the dataset
-try:
-    df = fetch_dataset()
-    df = df.rename(columns={
-        'Lead': 'lead',
-        'Alden sector': 'alden_sector',
-        'Category of the Keyword1': 'category_of_the_keyword1',
-        'Category of the Keyword2': 'category_of_the_keyword2'
-    })
-except Exception as e:
-    print(f"Error fetching dataset: {e}")
-    df = pd.DataFrame()  # Set an empty dataframe in case of an error
+# Load dataset
+df = fetch_dataset()
 
-# Download NLTK resources
+# Renaming columns based on the dataset structure
+df = df.rename(columns={
+    'Lead': 'lead',
+    'Alden sector': 'alden_sector',
+    'Category of the Keyword1': 'category_of_the_keyword1',
+    'Category of the Keyword2': 'category_of_the_keyword2'
+})
+
+# Initialize NLTK resources
 nltk.download('stopwords')
 nltk.download('wordnet')
+
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
-# Fill missing data
+# Handle missing data
 df.fillna({
     'Overview': 'no_description',
     'category_of_the_keyword1': 'no_category',
@@ -54,20 +55,22 @@ df.fillna({
     'alden_sector': 'no_sector'
 }, inplace=True)
 
+# Clean up text columns
 df['alden_sector'] = df['alden_sector'].str.lower().str.strip()
 df['category_of_the_keyword1'] = df['category_of_the_keyword1'].str.lower().str.strip()
 df['category_of_the_keyword2'] = df['category_of_the_keyword2'].str.lower().str.strip()
 
+# Combine sectors and categories as keywords
 df['keywords'] = df['alden_sector'] + ' ' + df['category_of_the_keyword1']
 
-# Preprocess the text by removing non-word characters, converting to lowercase, and lemmatizing
+# Text preprocessing function
 def preprocess_text(text):
     text = re.sub(r'\W', ' ', str(text))
     text = text.lower()
     text = ' '.join([lemmatizer.lemmatize(word) for word in text.split() if word not in stop_words])
     return text
 
-# Get embeddings from OpenAI
+# OpenAI embedding function
 def get_embedding(text):
     try:
         response = openai.Embedding.create(
@@ -77,9 +80,9 @@ def get_embedding(text):
         return response['data'][0]['embedding']
     except Exception as e:
         print(f"Error fetching embedding: {e}")
-        return np.zeros(1536)  # Return zero vector in case of error
+        return np.zeros(1536)
 
-# Check if embeddings are already computed
+# Generate or load embeddings
 if 'embedding' not in df.columns:
     print("Generating embeddings for dataset...")
     df['embedding'] = df['keywords'].apply(lambda x: get_embedding(x))
@@ -88,7 +91,7 @@ else:
     print("Loading precomputed embeddings...")
     df = pd.read_json('dataset_with_embeddings.json')
 
-# Function to calculate similarity
+# Similarity function
 def get_top_5_similarities(sector, input_text):
     input_combined = preprocess_text(sector + " " + input_text)
     input_embedding = get_embedding(input_combined)
@@ -101,7 +104,7 @@ def get_top_5_similarities(sector, input_text):
     top_5_results = df.nlargest(5, 'similarity')
     return top_5_results[['lead', 'Overview', 'similarity']]
 
-# Function to get unique alden sectors
+# Get unique sectors for the dropdown
 def get_unique_alden_sectors(df):
     unique_sectors = set()
     for sectors in df['alden_sector'].dropna():
@@ -109,11 +112,13 @@ def get_unique_alden_sectors(df):
             unique_sectors.add(sector.strip().capitalize())
     return list(unique_sectors)
 
+# Home route
 @app.route('/')
 def index():
     alden_sectors = get_unique_alden_sectors(df)
     return render_template('Alden.html', alden_sectors=alden_sectors)
 
+# Similarity route
 @app.route('/get_similarities', methods=['POST'])
 def get_similarities():
     try:
