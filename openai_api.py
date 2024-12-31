@@ -7,7 +7,7 @@ from nltk.stem import WordNetLemmatizer
 import openai
 import numpy as np
 
-openai.api_key = "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"
+openai.api_key = "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"
 
 app = Flask(__name__, template_folder='.')
 
