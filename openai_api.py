@@ -11,7 +11,7 @@ openai.api_key = "sk-proj-8CnhZuIJhwp4DG03tAr_Gy-FiXNXMKgzYLJTWFyirYnXc3UCoea9TO
 
 app = Flask(__name__, template_folder='.')
 
-df = pd.read_csv("C:/Users/Nikhil G/Desktop/Alden/AI search box/Alden_clients.csv", encoding='ISO-8859-1')
+df = pd.read_csv("https://github.com/Nikhil2349/Alden/blob/main/Alden_clients.csv", encoding='ISO-8859-1')
 
 df = df.rename(columns={
     'Lead': 'lead',
