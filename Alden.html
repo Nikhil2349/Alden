@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Softwares</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            background-color: #f4f4f4;
+            padding-top: 50px;
+        }
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .form-container {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        select, input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        select {
+            width: 30%;
+        }
+        input[type="text"] {
+            width: 65%;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .search-icon {
+            font-size: 18px;
+        }
+        #search-results {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            width: 60%;
+            min-height: 100px;
+        }
+        #loading-spinner {
+            display: none;
+            margin-top: 20px;
+        }
+        .result-item {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">Alden Capital</div>
+
+    <h1>Explore Softwares</h1>
+
+    <div class="form-container">
+        <select id="category" required>
+            <option value="" disabled selected>Category</option>
+            {% for sector in alden_sectors %}
+                <option value="{{ sector }}">{{ sector }}</option>
+            {% endfor %}
+        </select>
+
+        <input type="text" id="search-text" placeholder="Enter software requirement" required>
+
+        <button onclick="searchSoftware()">
+            <span class="search-icon">🔍</span>
+        </button>
+    </div>
+
+    <div id="loading-spinner">Loading...</div>
+
+    <div id="search-results"></div>
+
+    <script>
+        function searchSoftware() {
+            const category = document.getElementById('category').value;
+            const searchText = document.getElementById('search-text').value;
+
+            if (!category || !searchText) {
+                alert('Please fill in both fields!');
+                return;
+            }
+
+            document.getElementById('loading-spinner').style.display = 'block';
+
+            fetch('/get_similarities', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sector: category, input_text: searchText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading-spinner').style.display = 'none';
+
+                const resultsDiv = document.getElementById('search-results');
+                resultsDiv.innerHTML = '';  
+
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        const result = document.createElement('div');
+                        result.classList.add('result-item');
+                        result.innerHTML = `<strong>${item.lead}</strong><br>${item.Overview}<br>Similarity: ${item.similarity.toFixed(2)}`;
+                        resultsDiv.appendChild(result);
+                    });
+                } else {
+                    resultsDiv.innerHTML = 'No results found.';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading-spinner').style.display = 'none';
+                alert('Error occurred while searching. Please try again.');
+            });
+        }
+    </script>
+
+</body>
+</html>
