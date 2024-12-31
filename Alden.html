@@ -112,15 +112,16 @@
         function searchSoftware() {
             const category = document.getElementById('category').value;
             const searchText = document.getElementById('search-text').value;
-
+        
             if (!category || !searchText) {
                 alert('Please fill in both fields!');
                 return;
             }
-
+        
             document.getElementById('loading-spinner').style.display = 'block';
-
-            fetch('https://github.com/Nikhil2349/Alden/blob/main/openai%20api.py/get_similarities', {
+        
+            // Correct the API URL to your own backend
+            fetch('https://alden.onrender.com/get_similarities', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -130,10 +131,10 @@
             .then(response => response.json())
             .then(data => {
                 document.getElementById('loading-spinner').style.display = 'none';
-
+        
                 const resultsDiv = document.getElementById('search-results');
                 resultsDiv.innerHTML = '';  
-
+        
                 if (data.length > 0) {
                     data.forEach(item => {
                         const result = document.createElement('div');
@@ -150,6 +151,7 @@
                 alert('Error occurred while searching. Please try again.');
             });
         }
+
     </script>
 
 </body>
