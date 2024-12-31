@@ -12,7 +12,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 # Ensure to have your OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Ensure the API key is set in environment variables
+openai.api_key = os.getenv("openai")  # Ensure the API key is set in environment variables
 
 # Initialize Flask app
 app = Flask(__name__, template_folder='.')
