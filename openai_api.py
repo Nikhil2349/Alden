@@ -17,12 +17,13 @@ CORS(app)  # This line enables CORS
 # OpenAI API key
 openai.api_key = os.getenv("openai")
 
-# Fetch dataset from GitHub (server-side request)
 def fetch_dataset():
     url = "https://raw.githubusercontent.com/Nikhil2349/Alden/main/Alden_clients.csv"
     response = requests.get(url)
     if response.status_code == 200:
-        return pd.read_csv(response.text)
+        df = pd.read_csv(pd.compat.StringIO(response.text))
+        print("Columns in the dataset:", df.columns)  # Debugging line
+        return df
     else:
         raise Exception("Failed to fetch dataset from GitHub")
 
