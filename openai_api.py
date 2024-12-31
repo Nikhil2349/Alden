@@ -17,7 +17,7 @@ openai.api_key = os.getenv("openai")
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__, template_folder='.')
-CORS(app)
+CORS(app, resources={r"/get_similarities": {"origins": "https://alden.onrender.com"}})
 
 # Function to fetch dataset from GitHub
 def fetch_dataset():
