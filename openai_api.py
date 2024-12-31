@@ -8,6 +8,7 @@ from nltk.stem import WordNetLemmatizer
 import openai
 import numpy as np
 import os
+from flask_cors import CORS
 
 # Ensure to have your OpenAI API key
 openai.api_key = os.getenv("openai")
@@ -16,6 +17,7 @@ openai.api_key = os.getenv("openai")
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__, template_folder='.')
+CORS(app)
 
 # Function to fetch dataset from GitHub
 def fetch_dataset():
@@ -119,7 +121,7 @@ def index():
     return render_template('Alden.html', alden_sectors=alden_sectors)
 
 # Similarity route
-@app.route('/get_similarities', methods=['POST'])
+CORS(app, resources={r"/get_similarities": {"origins": "https://alden.onrender.com"}})
 def get_similarities():
     try:
         data = request.get_json()
