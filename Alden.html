@@ -26,27 +26,46 @@
         }
         h1 {
             font-size: 32px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
         }
         .form-container {
             display: flex;
+            flex-direction: column;
+            gap: 20px;
             align-items: center;
-            gap: 0;
+            width: 80%; /* Adjusted for better form width */
+            max-width: 600px; /* To limit the max width */
+            margin: 0 auto;
         }
-        select, input[type="text"] {
-            padding: 10px;
+        .row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+        select {
+            padding: 12px;
             font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
-        }
-        select {
-            width: 30%;
+            width: 100%;
         }
         input[type="text"] {
-            width: 65%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+        }
+        .search-row {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            position: relative;  /* To position the suggestions below this row */
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 20px;
             font-size: 16px;
             background-color: #4CAF50;
             color: white;
@@ -56,6 +75,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            width: 10%; /* To make button full width */
         }
         button:hover {
             background-color: #45a049;
@@ -67,7 +87,7 @@
             margin-top: 20px;
             padding: 10px;
             border-radius: 5px;
-            width: 60%;
+            width: 80%;
             min-height: 100px;
         }
         #loading-spinner {
@@ -81,6 +101,44 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        #suggestion-box {
+            border: 1px solid #ccc;
+            top: 100%;
+            height: auto;
+            overflow-y: auto;
+            background-color: #fff;
+            width: calc(100% - 24px); /* Ensure the width matches the input box */
+            position: absolute; /* Position relative to the parent container */
+            z-index: 1;
+            display: none;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 9999;
+            overflow-y: auto;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f1f1f1;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item p {
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+        }
+
+
     </style>
 </head>
 <body>
@@ -90,18 +148,26 @@
     <h1>Explore Softwares</h1>
 
     <div class="form-container">
-        <select id="category" required>
-            <option value="" disabled selected>Category</option>
-            {% for sector in alden_sectors %}
-                <option value="{{ sector }}">{{ sector }}</option>
-            {% endfor %}
-        </select>
+        <!-- Sector Dropdown Row -->
+        <div class="row">
+            <select id="category" required>
+                <option value="" disabled selected>----- Select the Sector -----</option>
+                {% for sector in alden_sectors %}
+                    <option value="{{ sector }}">{{ sector }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-        <input type="text" id="search-text" placeholder="Enter software requirement" required>
-
-        <button onclick="searchSoftware()">
-            <span class="search-icon">🔍</span>
-        </button>
+        <!-- Search Input and Button Row -->
+        <div class="search-row">
+            <div style="display: flex; flex-direction: row;">
+                <input type="text" id="search-text" placeholder="Enter software requirement" required oninput="showSuggestions()">
+                <button onclick="searchSoftware()">
+                    <span class="search-icon">🔍</span>
+                </button>
+            </div>
+            <div id="suggestion-box" style="border: 1px solid #ccc; display: none;"></div>
+        </div>
     </div>
 
     <div id="loading-spinner">Loading...</div>
@@ -109,19 +175,84 @@
     <div id="search-results"></div>
 
     <script>
+        let autocomplete_suggestions = [];
+
+        // Fetch suggestions from Flask backend based on category
+        async function fetchSuggestions(category) {
+            try {
+                const response = await fetch(`/suggestions?category=${encodeURIComponent(category)}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch suggestions');
+                }
+                autocomplete_suggestions = await response.json();
+                autocomplete_suggestions.category = category; // Store the category with the suggestions
+                showSuggestions(); // Call showSuggestions after fetching data
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+                autocomplete_suggestions = []; // Reset suggestions on error
+                showSuggestions(); // Call showSuggestions to handle error
+            }
+        }
+
+        // Function to display suggestions
+        async function showSuggestions() {
+            const input = document.getElementById('search-text');
+            const suggestionBox = document.getElementById('suggestion-box');
+            const categorySelect = document.getElementById('category'); 
+
+            const userInput = input.value.toLowerCase();
+            suggestionBox.innerHTML = ''; // Clear previous suggestions
+
+            if (userInput === '') {
+                suggestionBox.style.display = 'none';
+                return;
+            }
+
+            const selectedCategory = categorySelect.value; 
+
+            // Fetch suggestions if they are not available or if the category has changed
+            if (autocomplete_suggestions.length === 0 || autocomplete_suggestions.category !== selectedCategory) {
+                await fetchSuggestions(selectedCategory);
+            }
+
+            // Filter suggestions based on user input
+            const filteredSuggestions = autocomplete_suggestions.filter(item =>
+                item.toLowerCase().includes(userInput)
+            );
+
+            if (filteredSuggestions.length > 0) {
+                suggestionBox.style.display = 'block'; 
+                filteredSuggestions.forEach(suggestion => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.classList.add('suggestion-item');
+                    suggestionItem.innerText = suggestion;
+                    suggestionItem.onclick = () => {
+                        document.getElementById('search-text').value = suggestion;
+                        suggestionBox.style.display = 'none'; // Hide suggestions after selecting one
+                    };
+                    suggestionBox.appendChild(suggestionItem);
+                });
+            } else {
+                suggestionBox.style.display = 'none';
+            }
+        }
+
+        // Call searchSoftware function when user clicks the search button
         function searchSoftware() {
             const category = document.getElementById('category').value;
             const searchText = document.getElementById('search-text').value;
-        
+
             if (!category || !searchText) {
                 alert('Please fill in both fields!');
                 return;
             }
-        
+
+            // Clear suggestions when search is clicked
+            document.getElementById('suggestion-box').innerHTML = '';
+
             document.getElementById('loading-spinner').style.display = 'block';
-        
-            // Correct the API URL to your own backend
-            fetch('https://alden.onrender.com/get_similarities', {
+
+            fetch('/get_similarities', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -131,10 +262,10 @@
             .then(response => response.json())
             .then(data => {
                 document.getElementById('loading-spinner').style.display = 'none';
-        
+
                 const resultsDiv = document.getElementById('search-results');
                 resultsDiv.innerHTML = '';  
-        
+
                 if (data.length > 0) {
                     data.forEach(item => {
                         const result = document.createElement('div');
@@ -151,6 +282,7 @@
                 alert('Error occurred while searching. Please try again.');
             });
         }
+
 
     </script>
 
