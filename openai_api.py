@@ -109,7 +109,7 @@ def get_top_5_similarities(sector, input_text):
     
     # Sort by similarity and return the top 5
     top_5_results = df.nlargest(5, 'similarity')
-    return top_5_results[['lead', 'Overview', 'similarity']]
+    return top_5_results[['lead', 'Overview']]
 
 # Get unique sectors for the dropdown
 def get_unique_alden_sectors(df):
