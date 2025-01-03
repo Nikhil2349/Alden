@@ -83,8 +83,9 @@ def get_embedding(text):
         )
         return response['data'][0]['embedding']
     except Exception as e:
-        print(f"Error fetching embedding: {e}")
-        return np.zeros(1536)
+        print(f"Error fetching embedding: {e}")  # Log the error
+        return np.zeros(1536)  # Return a zero embedding as a fallback
+
 
 # Generate or load embeddings
 if 'embedding' not in df.columns:
@@ -206,13 +207,16 @@ def get_top_suggestions(category):
 def get_similarities():
     try:
         data = request.get_json()
+        print(f"Received data: {data}")  # Log received data
         sector = data['sector']
         input_text = data['input_text']
         top_5_results = get_top_5_similarities(sector, input_text)
         results = top_5_results.to_dict(orient='records')
         return jsonify(results)
     except Exception as e:
+        print(f"Error: {str(e)}")  # Log the error for debugging
         return jsonify({"error": str(e)}), 400
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
