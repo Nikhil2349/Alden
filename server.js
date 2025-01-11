@@ -1,16 +1,15 @@
-const _ = require('lodash');
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const { OpenAI } = require('openai'); 
-const express = require('express');
-const app = express();
+app.use(cors());
+app.use(cors());
 const port = 3000; 
+const app = express();
+app.use(express.json()); 
+const fs = require('fs');
+const _ = require('lodash');
 const cors = require('cors');
-app.use(cors());
-const math = require('mathjs'); // For mathematical operations like dot product and norm
-
-app.use(express.json()); // This will parse JSON data in the request body
-app.use(cors());
+const math = require('mathjs');
+const express = require('express');
+const { OpenAI } = require('openai'); 
+const mysql = require('mysql2/promise');
 
 
 
@@ -115,7 +114,6 @@ async function getSuggestions(keywords, num_suggestions = 15, retries = 3) {
         .map(s => s.replace(/^\d+\.\s*/, '').trim()) 
         .filter(s => s); 
 
-      // Clean up text, removing any unwanted slashes
       return suggestions.slice(0, 15).map(suggestion => suggestion.replace(/[^a-zA-Z0-9\s]/g, '').trim());
     } catch (error) {
       console.error(`Error generating suggestions for "${keywords}" (Attempt ${attempt} of ${retries}): ${error.message}`);
@@ -125,7 +123,6 @@ async function getSuggestions(keywords, num_suggestions = 15, retries = 3) {
     }
   }
 }
-
 
 async function getUniqueSectors(Data) {
   try {
@@ -189,25 +186,19 @@ function cosineSimilarity(vec1, vec2) {
   return dotProduct / (magnitude1 * magnitude2);
 }
 
-// Function to get similarities based on the sector and input_text
 async function get_similarities(sector, input_text) {
   const data = await fs.promises.readFile('node_dataset.json', 'utf8');
   const parsedData = JSON.parse(data);
-      
   const inputEmbedding = await getEmbedding(input_text); 
-  
-  // Filter by sector and calculate similarities
   const similarRows = parsedData.filter(row => row.aldenSector.toLowerCase() === sector.toLowerCase())
       .map(row => {
-          const similarity = cosineSimilarity(inputEmbedding, row.embedding); // Assuming 'embedding' is available
+          const similarity = cosineSimilarity(inputEmbedding, row.embedding); 
           return { lead: row.lead, similarity };
       });
-
-  // Sort by similarity and extract the lead values
   return similarRows.sort((a, b) => b.similarity - a.similarity)
   .map(row => row.lead)
   .reduce((list, leadValue) => {
-      list.push(leadValue); // Add each lead to the list
+      list.push(leadValue); 
       return list;
   }, []);
 
@@ -215,19 +206,16 @@ async function get_similarities(sector, input_text) {
 
 app.post('/get_similarities', async (req, res) => {
   const { sector, input } = req.body;
-  console.log('Received data:', sector, input); // Check the data received from the frontend
-
+  console.log('Received data:', sector, input); 
   try {
       const leadValues = await get_similarities(sector, input);
-      console.log('Lead values:', leadValues); // Log the lead values being sent to the frontend
-      res.json(leadValues); // Send lead values back to frontend
+      console.log('Lead values:', leadValues); 
+      res.json(leadValues); 
   } catch (error) {
       console.error(`Error in get_similarities: ${error.message}`);
       res.status(500).json({ error: 'An error occurred while processing the request' });
   }
 });
-
-
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
