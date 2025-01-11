@@ -211,4 +211,5 @@ app.post('/get_similarities', async (req, res) => {
 });
 
 app.listen(port, () => {
+    console.log('Serving server on ', {port});
 });
