@@ -33,8 +33,8 @@
             flex-direction: column;
             gap: 20px;
             align-items: center;
-            width: 80%; /* Adjusted for better form width */
-            max-width: 600px; /* To limit the max width */
+            width: 80%; 
+            max-width: 600px; 
             margin: 0 auto;
         }
         .row {
@@ -61,7 +61,7 @@
             flex-direction: column;
             gap: 15px;
             width: 100%;
-            position: relative;  /* To position the suggestions below this row */
+            position: relative;  
         }
         button {
             padding: 12px 20px;
@@ -74,7 +74,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 10%; /* To make button full width */
+            width: 10%;
         }
         button:hover {
             background-color: #45a049;
@@ -90,7 +90,6 @@
             max-width: 800px;
             margin: 20px auto;
         }
-
         .result-item {
             margin-bottom: 20px;
             padding: 15px;
@@ -99,29 +98,24 @@
             border-radius: 8px;
             transition: all 0.3s ease;
         }
-
         .result-item:hover {
             background-color: #f0f0f0;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
         .result-item strong {
             font-size: 18px;
             color: #333;
         }
-
         .result-item p {
             font-size: 16px;
             color: #555;
             margin: 8px 0;
         }
-
         .result-item .similarity {
             font-size: 14px;
             font-weight: bold;
             color: #4CAF50;
         }
-
         .no-results {
             text-align: center;
             font-size: 18px;
@@ -131,7 +125,6 @@
             background-color: #f9f9f9;
             border: 1px solid #ddd;
         }
-
         #loading-spinner {
             text-align: center;
             margin-top: 20px;
@@ -139,15 +132,14 @@
             color: #4CAF50;
             font-weight: bold;
         }
-
         #suggestion-box {
             border: 1px solid #ccc;
             top: 100%;
             height: auto;
             overflow-y: auto;
             background-color: #fff;
-            width: calc(100% - 24px); /* Ensure the width matches the input box */
-            position: absolute; /* Position relative to the parent container */
+            width: calc(100% - 24px);
+            position: absolute; 
             z-index: 1;
             display: none;
             border-radius: 5px;
@@ -155,14 +147,12 @@
             z-index: 9999;
             overflow-y: auto;
         }
-
         .suggestion-item {
             padding: 10px;
             border-bottom: 1px solid #ddd;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         .suggestion-item:hover {
             background-color: #f1f1f1;
         }
@@ -180,12 +170,11 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             padding: 20px;
-            width:750px; /* Adjust width as needed */
+            width:750px; 
             justify-content: center;
             align-items: center;
             margin-bottom:20px;
         }
-
         .card-image img {
             width: 100px;
             height: 100px;
@@ -193,11 +182,9 @@
             margin-right: 20px;
             float: left;
         }
-
         .card-content {
             margin-left: 120px;
         }
-
         .card-content h2 {
             font-size: 30px;
             margin-bottom: 10px;
@@ -205,14 +192,10 @@
         .card-content p {
             font-size: 18px;
         }
-
-
-
         .card-footer {
             font-size: 17px;
             margin-top: 10px;
         }
-
     </style>
 </head>
 <body>
@@ -222,15 +205,11 @@
     <h1>Explore Softwares</h1>
 
     <div class="form-container">
-        <!-- Sector Dropdown Row -->
         <div class="row">
             <select id="sector" required>
                 <option value="" disabled selected>----- Select the Sector -----</option>
-                <!-- Sectors will be loaded dynamically via AJAX -->
             </select>
         </div>
-
-        <!-- Search Input and Button Row -->
         <div class="search-row">
             <div style="display: flex; flex-direction: row;">
                 <input type="text" id="search-text" placeholder="Enter software requirement" required oninput="showSuggestions()">
@@ -437,14 +416,11 @@
         </div>
     </div>
 <script>
-    // Function to load sectors from Flask
     async function loadSectors() {
         try {
             const response = await fetch('http://localhost:3000/get-sectors');
             const data = await response.json();
             const sectorSelect = document.getElementById('sector');
-            
-            // Populate the dropdown with sectors
             data.sectors.forEach(sector => {
                 const option = document.createElement('option');
                 option.value = sector;
@@ -458,7 +434,6 @@
     window.onload = loadSectors;
 
     let autocomplete_suggestions = []
-    // Fetch suggestions from Flask backend based on sector
     async function fetchSuggestions(sector) {
         try {
             const response = await fetch(`http://localhost:3000/suggestions?sector=${encodeURIComponent(sector)}`);
@@ -466,12 +441,12 @@
                 throw new Error('Failed to fetch suggestions');
             }
             autocomplete_suggestions = await response.json();
-            autocomplete_suggestions.sector = sector; // Store the sector with the suggestions
-            showSuggestions(); // Call showSuggestions after fetching data
+            autocomplete_suggestions.sector = sector; 
+            showSuggestions(); 
         } catch (error) {
             console.error('Error fetching suggestions:', error);
-            autocomplete_suggestions = []; // Reset suggestions on error
-            displayErrorMessage("Failed to fetch suggestions."); // Provide user feedback
+            autocomplete_suggestions = []; 
+            displayErrorMessage("Failed to fetch suggestions."); 
         }
     }
 
@@ -479,31 +454,23 @@
         const input = document.getElementById('search-text');
         const suggestionBox = document.getElementById('suggestion-box');
         const sectorSelect = document.getElementById('sector'); 
-
         const userInput = input.value.toLowerCase();
-        suggestionBox.innerHTML = ''; // Clear previous suggestions
-
+        suggestionBox.innerHTML = ''; 
         if (userInput === '') {
             suggestionBox.style.display = 'none';
             return;
         }
-
         const selectedsector = sectorSelect.value; 
-
-        // Fetch suggestions if they are not available or if the sector has changed
         if (autocomplete_suggestions.length === 0 || autocomplete_suggestions.sector !== selectedsector) {
             fetchSuggestions(selectedsector);
         }
-
-        // Assuming autocomplete_suggestions is populated via AJAX
         if (autocomplete_suggestions && Array.isArray(autocomplete_suggestions.suggestions)) {
             const filteredSuggestions = autocomplete_suggestions.suggestions.filter(item =>
                 item.toLowerCase().includes(userInput.toLowerCase())
             );
-
             if (filteredSuggestions.length > 0) {
                 suggestionBox.style.display = 'block';
-                suggestionBox.innerHTML = ''; // Clear previous suggestions
+                suggestionBox.innerHTML = ''; 
                 filteredSuggestions.forEach(suggestion => {
                     const suggestionItem = document.createElement('div');
                     suggestionItem.classList.add('suggestion-item');
@@ -518,40 +485,28 @@
                 suggestionBox.style.display = 'none';
             }
         } else {
-            suggestionBox.style.display = 'none'; // Ensure suggestion box is hidden
+            suggestionBox.style.display = 'none'; 
             displayErrorMessage("Failed to fetch valid suggestions.");
         }
-
     }
 
-    // Function to display error message
     function displayErrorMessage(message) {
-        const errorElement = document.getElementById("error-message"); // Replace with your error element ID
+        const errorElement = document.getElementById("error-message");
         if (errorElement) {
             errorElement.textContent = message;
-            errorElement.style.display = "block"; // Show the error message
+            errorElement.style.display = "block"; 
         }
     }
 
     function searchSoftware(event) {
         const sector = document.getElementById('sector').value;
         const searchText = document.getElementById('search-text').value;
-
-        console.log('Sector:', sector); // Checkpoint 1: Log sector value
-        console.log('Search text:', searchText); // Checkpoint 2: Log search text
-
         if (!sector || !searchText) {
             alert('Please fill in both fields!');
             return;
         }
-
-        // Show loading spinner
         const loadingSpinner = document.getElementById('loading-spinner');
         loadingSpinner.style.display = 'block';
-
-        console.log('Fetching data from backend...'); // Checkpoint 3: Before fetching data
-
-        // Fetch data from backend
         fetch('http://localhost:3000/get_similarities', {
             method: 'POST',
             headers: {
@@ -559,33 +514,22 @@
             },
             body: JSON.stringify({ sector: sector, input: searchText })
         })
-        .then(response => response.json()) // Checkpoint 4: Parse response
+        .then(response => response.json()) 
         .then(data => {
-            console.log('Backend response:', data); // Log the response data
-
-            // Hide loading spinner
             loadingSpinner.style.display = 'none';
-
             if (data.length > 0) {
                 const searchResultsContainer = document.getElementById('search-results');
-                const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); // Get all cards
-
-                // Reset visibility of all cards
+                const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); 
                 allCards.forEach(card => {
-                    card.style.display = 'none'; // Hide all cards initially
+                    card.style.display = 'none'; 
                 });
-
-                console.log('Matching Leads:', data); // Log matching leads
-
-                // Loop through the data and display matching cards
                 data.forEach(leadId => {
                     const matchingCard = allCards.find(card => card.id.trim().toLowerCase() === leadId.trim().toLowerCase());
                     if (matchingCard) {
-                        matchingCard.style.display = 'block'; // Show matching card
-                        searchResultsContainer.appendChild(matchingCard); // Move the card to the end of the container
-                        console.log(`Card ${leadId} matches.`); // Log matching card
+                        matchingCard.style.display = 'block'; 
+                        searchResultsContainer.appendChild(matchingCard); 
                     } else {
-                        console.warn(`No card found for ID: ${leadId}`); // Log missing card
+                        console.warn(`No card found for ID: ${leadId}`); 
                     }
                 });
 
@@ -594,24 +538,10 @@
             }
         })
         .catch(error => {
-            console.error('Error fetching data:', error); // Log error
-            loadingSpinner.style.display = 'none'; // Hide spinner on error
+            console.error('Error fetching data:', error); 
+            loadingSpinner.style.display = 'none'; 
         });
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
 </script>
-
 </body>
 </html>
