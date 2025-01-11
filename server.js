@@ -1,15 +1,14 @@
-app.use(cors());
-app.use(cors());
-const port = 3000; 
+const mysql = require('mysql2/promise');
+const { OpenAI } = require('openai'); 
+const express = require('express');
+const math = require('mathjs');
+const cors = require('cors');
+const _ = require('lodash');
+const fs = require('fs');
 const app = express();
 app.use(express.json()); 
-const fs = require('fs');
-const _ = require('lodash');
-const cors = require('cors');
-const math = require('mathjs');
-const express = require('express');
-const { OpenAI } = require('openai'); 
-const mysql = require('mysql2/promise');
+const port = 3000; 
+app.use(cors());
 
 
 
@@ -20,7 +19,6 @@ async function getData() {
     const connection = await mysql.createConnection(dbConfig);
     const [rows] = await connection.execute('SELECT * FROM ai_search');
     await connection.end();
-    console.log('Data fetched successfully from the database');
     return rows;
   } 
   catch (error) {
@@ -54,10 +52,8 @@ async function preprocessData(rawData) {
           ...row,
           keywords: `${row.aldenSector} ${row.keyFeatures}`.toLowerCase(),
       }));
-      console.log('Exploded data processed.');
 
       if (fs.existsSync('node_dataset.json')) {
-          console.log("Loaded existing embeddings.");
           return JSON.parse(fs.readFileSync('node_dataset.json', 'utf-8'));
       } 
       else {
@@ -67,7 +63,6 @@ async function preprocessData(rawData) {
             row.suggestions = await getSuggestions(row.keywords);
         }        
           fs.writeFileSync('node_dataset.json', JSON.stringify(Data, null, 2), 'utf-8');
-          console.log('Exploded data with embeddings saved to JSON.');
       }
       return Data;
   } catch (error) {
@@ -206,10 +201,8 @@ async function get_similarities(sector, input_text) {
 
 app.post('/get_similarities', async (req, res) => {
   const { sector, input } = req.body;
-  console.log('Received data:', sector, input); 
   try {
       const leadValues = await get_similarities(sector, input);
-      console.log('Lead values:', leadValues); 
       res.json(leadValues); 
   } catch (error) {
       console.error(`Error in get_similarities: ${error.message}`);
@@ -218,5 +211,4 @@ app.post('/get_similarities', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
 });
