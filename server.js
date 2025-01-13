@@ -3,14 +3,20 @@ const { OpenAI } = require('openai');
 const express = require('express');
 const math = require('mathjs');
 const cors = require('cors');
-const _ = require('lodash');
+require('dotenv').config();
 const fs = require('fs');
 const app = express();
 app.use(express.json()); 
 const port = 3000; 
 app.use(cors());
 
-
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
 
 let Data = [];
 
@@ -53,17 +59,14 @@ async function preprocessData(rawData) {
           keywords: `${row.aldenSector} ${row.keyFeatures}`.toLowerCase(),
       }));
 
-      if (fs.existsSync('node_dataset.json')) {
-          return JSON.parse(fs.readFileSync('node_dataset.json', 'utf-8'));
-      } 
-      else {
-          console.log("Computing embeddings for new data...");
-          for (let row of Data) {
+      for (let row of Data) {
+        if (!row.embedding) {
+            console.log(`Computing embeddings and suggestions for: ${row.keywords}`);
             row.embedding = await getEmbedding(row.keywords); 
-            row.suggestions = await getSuggestions(row.keywords);
-        }        
-          fs.writeFileSync('node_dataset.json', JSON.stringify(Data, null, 2), 'utf-8');
+            row.suggestions = await getSuggestions(row.keywords); 
+        }
       }
+
       return Data;
   } catch (error) {
       console.error('Data processing error:', error.message);
@@ -84,7 +87,7 @@ async function getEmbedding(text) {
   }
 }
 
-async function getSuggestions(keywords, num_suggestions = 15, retries = 3) {
+async function getSuggestions(keywords, num_suggestions = 20, retries = 3) {
   const prompt = `
     Generate ${num_suggestions} unique autocomplete search queries based on this context: "${keywords}". 
     Focus on how users naturally enter search queries when looking for specific features, products, or services in this sector. 
@@ -211,5 +214,5 @@ app.post('/get_similarities', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log('Serving server on ', {port});
+  console.log('Serving server on ', {port});
 });
