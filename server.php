@@ -476,8 +476,9 @@
                     suggestionItem.classList.add('suggestion-item');
                     suggestionItem.innerText = suggestion;
                     suggestionItem.onclick = () => {
-                        document.getElementById('search-text').value = suggestion;
-                        suggestionBox.style.display = 'none';
+                        input.value = suggestion; 
+                        suggestionBox.style.display = 'none'; 
+                        searchSoftware(); 
                     };
                     suggestionBox.appendChild(suggestionItem);
                 });
@@ -489,6 +490,13 @@
             displayErrorMessage("Failed to fetch valid suggestions.");
         }
     }
+
+    document.getElementById('search-text').addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); 
+            searchSoftware(); 
+        }
+    });
 
     function displayErrorMessage(message) {
         const errorElement = document.getElementById("error-message");
