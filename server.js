@@ -18,6 +18,7 @@ const dbConfig = {
   database: process.env.DB_NAME,
 };
 
+
 let Data = [];
 
 async function getData() {
@@ -40,9 +41,14 @@ async function preprocessData(rawData) {
           lead: company.Lead,
           overview: company.Overview,
           aldenSector: company['Alden Sector'],
-          keyFeatures: company['Key Features']
+          keybenefits: company['Key Benefits'],
+          keyFeatures: company['Key Features'],
+          challenges: company.Challenges
       }));
 
+      structuredData = structuredData.filter(row =>
+          Object.values(row).every(value => value !== null && value !== undefined)
+      );
       
       structuredData.forEach(row => {
           let sectorsArray = row.aldenSector.split(', '); 
@@ -55,18 +61,19 @@ async function preprocessData(rawData) {
       });
 
       Data = Data.map(row => ({
-          ...row,
-          keywords: `${row.aldenSector} ${row.keyFeatures}`.toLowerCase(),
+        ...row,
+        keywords: `${row.aldenSector} ${row.keyFeatures} ${row.keybenefits} ${row.challenges}`.toLowerCase(),
       }));
+
 
       for (let row of Data) {
         if (!row.embedding) {
-            console.log(`Computing embeddings and suggestions for: ${row.keywords}`);
             row.embedding = await getEmbedding(row.keywords); 
             row.suggestions = await getSuggestions(row.keywords); 
         }
       }
 
+      console.log('Preprocessing step is Done')
       return Data;
   } catch (error) {
       console.error('Data processing error:', error.message);
@@ -87,11 +94,11 @@ async function getEmbedding(text) {
   }
 }
 
-async function getSuggestions(keywords, num_suggestions = 20, retries = 3) {
+async function getSuggestions(context, num_suggestions = 20, retries = 3) {
   const prompt = `
-    Generate ${num_suggestions} unique autocomplete search queries based on this context: "${keywords}". 
+    Generate ${num_suggestions} unique autocomplete search queries based on this context: "${context}". 
     Focus on how users naturally enter search queries when looking for specific features, products, or services in this sector. 
-    The queries should reflect real user behavior, using concise, intent-driven phrases that include relevant features or benefits. 
+    The queries should reflect real user behavior, using concise, intent-driven phrases that include relevant features, benefits, or challenges. 
     Avoid overly generic terms and prioritize phrases that highlight the specific needs or functionality users might search for. 
     Keep the queries short, natural, and directly tied to the context.
   `;
@@ -108,15 +115,15 @@ async function getSuggestions(keywords, num_suggestions = 20, retries = 3) {
       });
       const suggestionsText = response.choices[0].message.content.trim();
       const suggestions = suggestionsText
-        .split('\n') 
-        .map(s => s.replace(/^\d+\.\s*/, '').trim()) 
-        .filter(s => s); 
+        .split('\n')
+        .map(s => s.replace(/^\d+\.\s*/, '').trim())
+        .filter(s => s);
 
-      return suggestions.slice(0, 15).map(suggestion => suggestion.replace(/[^a-zA-Z0-9\s]/g, '').trim());
+      return suggestions.slice(0, 20).map(suggestion => suggestion.replace(/[^a-zA-Z0-9\s]/g, '').trim());
     } catch (error) {
-      console.error(`Error generating suggestions for "${keywords}" (Attempt ${attempt} of ${retries}): ${error.message}`);
+      console.error(`Error generating suggestions for "${context}" (Attempt ${attempt} of ${retries}): ${error.message}`);
       if (attempt === retries) {
-        return []; 
+        return [];
       }
     }
   }
@@ -128,6 +135,7 @@ async function getUniqueSectors(Data) {
       const uniqueSectors = [...new Set(sectors)];
       uniqueSectors.sort();
       return uniqueSectors;
+      console.log(uniqueSectors)
   } catch (error) {
       console.error('Error extracting unique sectors:', error.message);
   }
@@ -163,9 +171,8 @@ app.get('/suggestions', async (req, res) => {
     return res.status(400).json({ error: 'sector not provided' });
   }
   try {
-    const data = await fs.promises.readFile('node_dataset.json', 'utf8');
-    const parsedData = JSON.parse(data);
-    const matchingRows = parsedData.filter(row => row.aldenSector.toLowerCase() === sector);
+    const data = Data;
+    const matchingRows = Data.filter(row => row.aldenSector.toLowerCase() === sector);
     if (matchingRows.length === 0) {
       return res.json({ success: false, message: 'No suggestions found for this sector.' });
     }
@@ -185,10 +192,9 @@ function cosineSimilarity(vec1, vec2) {
 }
 
 async function get_similarities(sector, input_text) {
-  const data = await fs.promises.readFile('node_dataset.json', 'utf8');
-  const parsedData = JSON.parse(data);
+  const data = Data;
   const inputEmbedding = await getEmbedding(input_text); 
-  const similarRows = parsedData.filter(row => row.aldenSector.toLowerCase() === sector.toLowerCase())
+  const similarRows = Data.filter(row => row.aldenSector.toLowerCase() === sector.toLowerCase())
       .map(row => {
           const similarity = cosineSimilarity(inputEmbedding, row.embedding); 
           return { lead: row.lead, similarity };
@@ -199,7 +205,6 @@ async function get_similarities(sector, input_text) {
       list.push(leadValue); 
       return list;
   }, []);
-
 }
 
 app.post('/get_similarities', async (req, res) => {
