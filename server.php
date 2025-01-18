@@ -171,6 +171,21 @@
             font-size: 14px;
             color: #333;
         }
+        #sector-list{
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            border: 1px solid #ccc;
+            background: white;
+            max-height: 150px;
+            overflow-y: auto;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -180,10 +195,11 @@
     <h1>Explore Softwares</h1>
 
     <div class="form-container">
-        <div class="row">
-            <select id="sector" required>
-                <option value="" disabled selected>----- Select the Sector -----</option>
-            </select>
+    <div class="row">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="sector" placeholder="Enter sector" oninput="filterSectors()" style="width: 100%; padding: 8px; box-sizing: border-box;" />
+                <ul id="sector-list"></ul>
+            </div>
         </div>
         <div class="search-row">
             <div style="display: flex; flex-direction: row;">
@@ -261,26 +277,50 @@
     <div id="loading-spinner" style="display: none;">Loading...</div>
 
     <script>
-        function navigateTo(url) {
-            window.location.href = url;
-        }
+        let sectors = []; // Global array to hold the fetched sectors
 
         async function loadSectors() {
             try {
                 const response = await fetch('http://localhost:3000/get-sectors');
                 const data = await response.json();
-                const sectorSelect = document.getElementById('sector');
-                data.sectors.forEach(sector => {
-                    const option = document.createElement('option');
-                    option.value = sector;
-                    option.textContent = sector;
-                    sectorSelect.appendChild(option);
-                });
+                sectors = data.sectors; // Store fetched sectors
             } catch (error) {
                 console.error('Error fetching sectors:', error);
             }
         }
+
+        function filterSectors() {
+            const input = document.getElementById('sector').value.toLowerCase();
+            const sectorList = document.getElementById('sector-list');
+            sectorList.innerHTML = ''; // Clear previous results
+
+            if (input) {
+                const filteredSectors = sectors.filter(sector =>
+                    sector.toLowerCase().startsWith(input)
+                );
+
+                filteredSectors.forEach(sector => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = sector;
+                    listItem.style.padding = '8px';
+                    listItem.style.cursor = 'pointer';
+                    listItem.style.borderBottom = '1px solid #ddd';
+                    listItem.onclick = () => {
+                        document.getElementById('sector').value = sector;
+                        sectorList.style.display = 'none'; // Hide list on selection
+                    };
+                    sectorList.appendChild(listItem);
+                });
+
+                sectorList.style.display = filteredSectors.length ? 'block' : 'none';
+            } else {
+                sectorList.style.display = 'none'; // Hide list if input is empty
+            }
+        }
+
         window.onload = loadSectors;
+
+
 
         let autocomplete_suggestions = []
         async function fetchSuggestions(sector) {
@@ -376,61 +416,58 @@
             }
         });
 
+        function displayErrorMessage(message) {
+            const errorElement = document.getElementById("error-message");
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = "block"; 
+            }
+        }
+
         function searchSoftware(event) {
             const sector = document.getElementById('sector').value;
             const searchText = document.getElementById('search-text').value;
-
             if (!sector || !searchText) {
                 alert('Please fill in both fields!');
                 return;
             }
-
             const loadingSpinner = document.getElementById('loading-spinner');
             loadingSpinner.style.display = 'block';
-
             fetch('http://localhost:3000/get_similarities', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ sector: sector, input: searchText }),
+                body: JSON.stringify({ sector: sector, input: searchText })
             })
-                .then((response) => response.json())
-                .then((data) => {
-                    loadingSpinner.style.display = 'none';
-
+            .then(response => response.json()) 
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+                if (data.length > 0) {
                     const searchResultsContainer = document.getElementById('search-results');
-                    const allCards = Array.from(searchResultsContainer.getElementsByClassName('card'));
+                    const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); 
+                    allCards.forEach(card => {
+                        card.style.display = 'none'; 
+                    });
+                    data.forEach(leadId => {
+                        const matchingCard = allCards.find(card => card.id.trim().toLowerCase() === leadId.trim().toLowerCase());
+                        if (matchingCard) {
+                            matchingCard.style.display = 'block'; 
+                            searchResultsContainer.appendChild(matchingCard); 
+                        } else {
+                            console.warn(`No card found for ID: ${leadId}`); 
+                        }
+                    });
 
-                    if (data.length > 0) {
-                        // Reset all cards to display none (optional, as they're already hidden)
-                        allCards.forEach((card) => {
-                            card.style.display = 'none';
-                        });
-
-                        // Display only the matching cards
-                        data.forEach((leadId) => {
-                            const matchingCard = allCards.find(
-                                (card) => card.id.trim().toLowerCase() === leadId.trim().toLowerCase()
-                            );
-
-                            if (matchingCard) {
-                                matchingCard.style.display = 'block';
-                                searchResultsContainer.appendChild(matchingCard);
-                            } else {
-                                console.warn(`No card found for ID: ${leadId}`);
-                            }
-                        });
-                    } else {
-                        alert('No matching data found!');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error fetching data:', error);
-                    loadingSpinner.style.display = 'none';
-                });
+                } else {
+                    alert('No matching data found!');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error); 
+                loadingSpinner.style.display = 'none'; 
+            });
         }
-
     </script>
 </body>
 </html>
