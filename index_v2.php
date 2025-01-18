@@ -159,8 +159,6 @@
                 alert('Please fill in both fields!');
                 return;
             }
-            const loadingSpinner = document.getElementById('loading-spinner');
-            loadingSpinner.style.display = 'block';
             fetch('http://localhost:3000/get_similarities', {
                 method: 'POST',
                 headers: {
@@ -170,7 +168,6 @@
             })
             .then(response => response.json()) 
             .then(data => {
-                loadingSpinner.style.display = 'none';
                 if (data.length > 0) {
                     const searchResultsContainer = document.getElementById('search-results');
                     const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); 
@@ -193,7 +190,6 @@
             })
             .catch(error => {
                 console.error('Error fetching data:', error); 
-                loadingSpinner.style.display = 'none'; 
             });
     }
 </script>
@@ -584,7 +580,6 @@
                     <h2>Palms</h2>
                 </div>
         </div>
-        <div id="loading-spinner" style="display: none;">Loading...</div>
 
 
 
