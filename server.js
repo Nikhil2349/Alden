@@ -67,18 +67,18 @@ async function preprocessData(rawData) {
 
 
       const All_Data = 'All_Data.json';
-        let savedEmbeddings = {};
+      let savedEmbeddings = {};
 
-        try {
+      try {
             const fileContent = await fs.readFile(All_Data, 'utf-8');
             savedEmbeddings = JSON.parse(fileContent);
-        } catch (error) {
+      } catch (error) {
             if (error.code !== 'ENOENT') {
                 console.error('Error reading embeddings file:', error.message);
                 throw error;
             }
-        }
-        for (let row of Data) {
+      }
+      for (let row of Data) {
             if (savedEmbeddings[row.keywords]) {
                 row.embedding = savedEmbeddings[row.keywords].embedding;
                 row.suggestions = savedEmbeddings[row.keywords].suggestions;
@@ -99,9 +99,9 @@ async function preprocessData(rawData) {
                     embedding: row.embedding
                 };
             }
-        }
+      }
 
-        await fs.writeFile(All_Data, JSON.stringify(savedEmbeddings, null, 2));
+      await fs.writeFile(All_Data, JSON.stringify(savedEmbeddings, null, 2));
 
       console.log('Preprocessing step is Done')
       return Data;
