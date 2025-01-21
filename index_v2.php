@@ -6,92 +6,89 @@
 <!-- jQuery UI library -->
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/themes/smoothness/jquery-ui.css">
    <link media="all" href="style.css" rel="stylesheet" />
-   <script src="js/server.js"></script>
+   <link rel="stylesheet" href="style.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
 
 <script>
-    let sectors = []; 
+        let sectors = []; 
 
-    async function loadSectors() {
-        try {
-            const response = await fetch('http://localhost:3000/get-sectors');
-            const data = await response.json();
-            sectors = data.sectors; // Store fetched sectors
-        } catch (error) {
-            console.error('Error fetching sectors:', error);
+        async function loadSectors() {
+            try {
+                const response = await fetch('http://localhost:3000/get-sectors');
+                const data = await response.json();
+                sectors = data.sectors; // Store fetched sectors
+            } catch (error) {
+                console.error('Error fetching sectors:', error);
+            }
         }
-    }
 
-    function filterSectors() {
-        const input = document.getElementById('sector').value.toLowerCase();
-        const sectorList = document.getElementById('sector-list');
-        sectorList.innerHTML = ''; 
+        function filterSectors() {
+            const input = document.getElementById('sector').value.toLowerCase();
+            const sectorList = document.getElementById('sector-list');
+            const sectorField = document.getElementById('sector');
 
-        if (input) {
-            const filteredSectors = sectors.filter(sector =>
-                sector.toLowerCase().startsWith(input)
-            );
+            sectorList.innerHTML = ''; 
 
-            filteredSectors.forEach(sector => {
-                const listItem = document.createElement('li');
-                listItem.textContent = sector;
-                listItem.style.padding = '8px';
-                listItem.style.cursor = 'pointer';
-                listItem.style.borderBottom = '1px solid #ddd';
-                listItem.onclick = () => {
-                    document.getElementById('sector').value = sector;
-                    sectorList.style.display = 'none'; 
-                };
-                sectorList.appendChild(listItem);
-            });
+            if (input) {
+                const filteredSectors = sectors.filter(sector =>
+                    sector.toLowerCase().startsWith(input)
+                );
 
-            sectorList.style.display = filteredSectors.length ? 'block' : 'none';
-        } else {
-            sectorList.style.display = 'none'; 
+                sectorList.style.position = 'absolute';
+                sectorList.style.top = `${sectorField.offsetTop + sectorField.offsetHeight}px`;
+                sectorList.style.left = `${sectorField.offsetLeft}px`;
+                sectorList.style.width = `${sectorField.offsetWidth}px`; 
+
+                filteredSectors.forEach(sector => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = sector;
+                    listItem.style.padding = '5px';
+                    listItem.style.borderBottom = '1px solid #ddd';
+                    listItem.style.cursor = 'pointer';
+                    listItem.onclick = () => {
+                        document.getElementById('sector').value = sector;
+                        sectorList.style.display = 'none'; 
+                    };
+                    sectorList.appendChild(listItem);
+                });
+
+                sectorList.style.display = filteredSectors.length ? 'block' : 'none';
+            } else {
+                sectorList.style.display = 'none'; 
+            }
         }
-    }
 
-    window.onload = loadSectors;
+        window.onload = loadSectors;
 
-    let autocomplete_suggestions = []
-    async function fetchSuggestions(sector) {
+        let autocomplete_suggestions = [];
+
+        async function fetchSuggestions(sector) {
             try {
                 const response = await fetch(`http://localhost:3000/suggestions?sector=${encodeURIComponent(sector)}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch suggestions');
                 }
                 autocomplete_suggestions = await response.json();
-                autocomplete_suggestions.sector = sector; 
+                autocomplete_suggestions.sector = sector;
                 showSuggestions(); 
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
                 autocomplete_suggestions = []; 
                 displayErrorMessage("Failed to fetch suggestions."); 
             }
-    }
+        }
 
-    function getRandomSuggestions(suggestions) {
-            // Get a random selection of 10 suggestions
-            const randomSuggestions = [];
-            while (randomSuggestions.length < 10 && suggestions.length > 0) {
-                const randomIndex = Math.floor(Math.random() * suggestions.length);
-                randomSuggestions.push(suggestions[randomIndex]);
-                suggestions.splice(randomIndex, 1); // Remove the selected suggestion to avoid duplicates
-            }
-            return randomSuggestions;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const input = document.getElementById('search-text');
             if (input) {
                 input.addEventListener('focus', showSuggestions);
             }
-    });
+        });
 
-    function showSuggestions() {
+        function showSuggestions() {
             const input = document.getElementById('search-text');
             const suggestionBox = document.getElementById('suggestion-box');
-            const sectorSelect = document.getElementById('sector'); 
+            const sectorSelect = document.getElementById('sector');
             const userInput = input.value.toLowerCase();
             suggestionBox.innerHTML = ''; 
 
@@ -107,11 +104,9 @@
             }
 
             if (autocomplete_suggestions && Array.isArray(autocomplete_suggestions.suggestions)) {
-                const randomSuggestions = getRandomSuggestions([...autocomplete_suggestions.suggestions]);
-
-                const filteredSuggestions = randomSuggestions.filter(item =>
-                    item.toLowerCase().includes(userInput.toLowerCase())
-                );
+                const filteredSuggestions = autocomplete_suggestions.suggestions
+                .filter(item => item.toLowerCase().includes(userInput))
+                .slice(0, 5);
 
                 if (filteredSuggestions.length > 0) {
                     suggestionBox.style.display = 'block';
@@ -122,9 +117,9 @@
                         suggestionItem.classList.add('suggestion-item');
                         suggestionItem.innerText = suggestion;
                         suggestionItem.onclick = () => {
-                            input.value = suggestion; 
-                            suggestionBox.style.display = 'none'; 
-                            searchSoftware(); 
+                            input.value = suggestion;
+                            suggestionBox.style.display = 'none';
+                            searchSoftware();
                         };
                         suggestionBox.appendChild(suggestionItem);
                     });
@@ -132,33 +127,47 @@
                     suggestionBox.style.display = 'none';
                 }
             } else {
-                suggestionBox.style.display = 'none'; 
+                suggestionBox.style.display = 'none';
                 displayErrorMessage("Failed to fetch valid suggestions.");
             }
-    }
+        }
 
-    document.getElementById('search-text').addEventListener('keydown', (event) => {
+        document.getElementById('search-text').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault(); 
                 searchSoftware(); 
             }
-    });
+        });
 
-    function displayErrorMessage(message) {
+        function displayErrorMessage(message) {
             const errorElement = document.getElementById("error-message");
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.style.display = "block"; 
             }
-    }
+        }
 
-    function searchSoftware(event) {
+        function searchSoftware(event) {
             const sector = document.getElementById('sector').value;
             const searchText = document.getElementById('search-text').value;
+            const searchResultsContainer = document.getElementById('search-results');
+            const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); 
+
+            // Input validation
             if (!sector || !searchText) {
                 alert('Please fill in both fields!');
                 return;
             }
+
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            // Display the loading spinner and hide all cards
+            loadingSpinner.style.display = 'block';
+            allCards.forEach(card => {
+                card.style.display = 'none'; // Hide all cards
+            });
+
+            // Fetch data from the backend
             fetch('http://localhost:3000/get_similarities', {
                 method: 'POST',
                 headers: {
@@ -166,32 +175,33 @@
                 },
                 body: JSON.stringify({ sector: sector, input: searchText })
             })
-            .then(response => response.json()) 
+            .then(response => response.json())
             .then(data => {
+                loadingSpinner.style.display = 'none'; // Hide loading spinner
                 if (data.length > 0) {
-                    const searchResultsContainer = document.getElementById('search-results');
-                    const allCards = Array.from(searchResultsContainer.getElementsByClassName('card')); 
-                    allCards.forEach(card => {
-                        card.style.display = 'none'; 
-                    });
+                    // Show matching cards
                     data.forEach(leadId => {
                         const matchingCard = allCards.find(card => card.id.trim().toLowerCase() === leadId.trim().toLowerCase());
                         if (matchingCard) {
-                            matchingCard.style.display = 'block'; 
-                            searchResultsContainer.appendChild(matchingCard); 
+                            matchingCard.style.display = 'block'; // Display matching card
+                            searchResultsContainer.appendChild(matchingCard); // Reorder the matching card
                         } else {
-                            console.warn(`No card found for ID: ${leadId}`); 
+                            console.warn(`No card found for ID: ${leadId}`);
                         }
                     });
-
                 } else {
                     alert('No matching data found!');
                 }
             })
             .catch(error => {
-                console.error('Error fetching data:', error); 
+                console.error('Error fetching data:', error);
+                loadingSpinner.style.display = 'none'; // Ensure spinner is hidden on error
             });
-    }
+        }
+
+        function navigateTo(url) {
+            window.location.href = url;
+        }
 </script>
 
 <style>
@@ -203,8 +213,8 @@
 #searchForm:hover{
     box-shadow:none;
 }
-#skill_input{
-    width:380px ;
+#search-text{
+    width:400px ;
     
     height: 20px !important;
     padding: 20px !important;
@@ -504,6 +514,91 @@
     }
     
 }
+        .card {
+            display:None;
+            padding: 5px;
+            gap: 10px; 
+            width: 380px;
+            min-height: 10px; 
+            margin-bottom: 2px;
+            cursor:pointer;
+        }
+
+        .card-content img {
+            border: 1px solid #9b9999;
+            width: 60px; 
+            height: 50px; 
+            object-fit: contain; 
+            border-radius: 5px; 
+        }
+
+        .card h2 {
+            font-size: 15px; 
+            font-weight: bold; 
+            margin: 0; 
+        }
+
+        .card-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #sector-list {
+            overflow-y: auto;
+            position: absolute; /* Change to absolute */
+            top: 100%; /* Adjusts position relative to the parent */
+            left: 0;
+            width: 400px;
+            border: 1px solid #ccc;
+            background: white;
+            max-height: 1000px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: none;
+            z-index: 1000;
+        }
+
+        #suggestion-box {
+            border: 1px solid #ccc;
+            top: 70%;
+            overflow: auto;
+            position: absolute;
+            background-color: #fff;
+            width: 400px;
+            z-index: 1;
+            display: none;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 9999;
+        }
+        .suggestion-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f1f1;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item p {
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+        }
+        #search-results{
+            overflow: auto;
+            position: absolute;
+            background: #fff;
+            border-radius:15px;
+            padding:10px;
+        }
 </style>
 </head>
 <body>
@@ -531,73 +626,113 @@
         <input type="text" id="search-text" name="skill_input"  class="" required oninput="showSuggestions()" placeholder="Start typing...">
         <div id="suggestion-box" style="border: 1px solid #ccc; display: none;"></div>
         <div id="search-results">
-                <div class="card" id="Brainvire" >
-                    <h2>Brainvire</h2>
+                <div class="card" id="Brainvire" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/brainvire.php')">
+                    <div class="card-content">
+                        <img src="image/brainwire.svg" alt="">
+                        <h2>Brainvire</h2>
+                    </div>
                 </div>
-                <div class="card" id="Cogoport" >
-                    <h2>Cogoport</h2>
+                <div class="card" id="Cogoport" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/cogoport.php')">
+                    <div class="card-content">
+                        <img src="https://thealdenglobal.com/ai-segregation/image/logo-cogoport-1.svg" alt="">
+                        <h2>Cogoport</h2>
+                    </div>
                 </div>
-                <div class="card" id="Crest" >
-                    <h2>Crest</h2>
-                </div>
-                <div class="card" id="Datalabs India Solutions Private Limited" >
-                    <h2>Datalabs India Solutions Private Limited</h2>
-                </div>
-                <div class="card" id="Elixia Tech" >
-                    <h2>Elixia Tech</h2>
-                </div>
-                <div class="card" id="Inciflo" >
-                    <h2>Inciflo</h2>
-                </div>
-                <div class="card" id="Inquizity" >
-                    <h2>Inquizity</h2>
-                </div>
-                <div class="card" id="Intugine Technologies" >
-                    <h2>Intugine Technologies</h2>
-                </div>
-                <div class="card" id="Lepton Software" >
-                    <h2>Lepton Software</h2>
-                </div>
-                <div class="card" id="NEWAGENXT" >
-                    <h2>NEWAGENXT</h2>
-                </div>
-                <div class="card" id="ORMAE" >
-                    <h2>ORMAE</h2>
-                </div>
-                <div class="card" id="Qbit" >
-                    <h2>Qbit</h2>
-                </div>
-                <div class="card" id="Rocket Flyer Technology Pvt. Ltd." >
-                    <h2>Rocket Flyer Technology Pvt. Ltd.</h2>
-                </div>
-                <div class="card" id="Saddle Point" >
-                    <h2>Saddle Point</h2>
-                </div>
-                <div class="card" id="Shipsy" >
-                    <h2>Shipsy</h2>
-                </div>
-                <div class="card" id="Palms" >
-                    <h2>Palms</h2>
-                </div>
-        </div>
 
+                <div class="card" id="Crest" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/crest.php')">
+                    <div class="card-content">
+                        <img src="image\crest.png" alt="">
+                        <h2>Crest</h2>
+                    </div>
+                </div>
+                <div class="card" id="Datalabs India Solutions Private Limited" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/datalabs.php')">
+                    <div class="card-content">
+                        <img src="image\datalabs.png" alt="">
+                        <h2>Datalabs India Solutions Private Limited</h2>
+                    </div>
+                </div>
+                <div class="card" id="Elixia Tech" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/elixiatech.php')">
+                    <div class="card-content">
+                        <img src="image/el.png" alt="">
+                        <h2>Elixia Tech</h2>
+                    </div>
+                </div>
+                <div class="card" id="Inciflo" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/inflico.php')">
+                    <div class="card-content">
+                        <img src="image\inflico.avif" alt="">
+                        <h2>Inciflo</h2>
+                    </div>
+                </div>
+                <div class="card" id="Inquizity" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/intiquzity.php')">
+                    <div class="card-content">
+                        <img src="image\inti.png" alt="">
+                        <h2>Inquizity</h2>
+                    </div>
+                </div>
+                <div class="card" id="Intugine Technologies" onclick="navigateTo('http://thealdenglobal.com/ai-segregation/intiguine.php')">
+                    <div class="card-content">
+                        <img src="image\intiguine.png" alt="">
+                        <h2>Intugine Technologies</h2>
+                    </div>
+                </div>
+                <div class="card" id="Lepton Software" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/lepton.php')">
+                    <div class="card-content">
+                        <img src="image\lptn.png" alt="">
+                        <h2>Lepton Software</h2>
+                    </div>
+                </div>
+                <div class="card" id="NEWAGENXT" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/newage.php')">
+                    <div class="card-content">
+                        <img src="image\newage.jpg" alt="">
+                        <h2>NEWAGENXT</h2>
+                    </div>
+                </div>
+                <div class="card" id="ORMAE" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/ormae.php')">
+                    <div class="card-content">
+                        <img src="image\ORMAE Logo.png" alt="">
+                        <h2>ORMAE</h2>
+                    </div>
+                </div>
+                <div class="card" id="Qbit" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/qbit.php')">
+                    <div class="card-content">
+                        <img src="image\qbit.png" alt="">
+                        <h2>Qbit</h2>
+                    </div>
+                </div>
+                <div class="card" id="Rocket Flyer Technology Pvt. Ltd." onclick="navigateTo('https://thealdenglobal.com/ai-segregation/rocketflyer.php')">
+                    <div class="card-content">
+                        <img src="image\rocket.jpeg" alt="">
+                        <h2>Rocket Flyer Technology Pvt. Ltd.</h2>
+                    </div>
+                </div>
+                <div class="card" id="Saddle Point" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/saddle-point.php')">
+                    <div class="card-content">
+                        <img src="image\saddle.jpeg" alt="">
+                        <h2>Saddle Point</h2>
+                    </div>
+                </div>
+                <div class="card" id="Shipsy" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/shipsy.php')">
+                    <div class="card-content">
+                        <img src="image\Shipsy_Logo.jpg" alt="">
+                        <h2>Shipsy</h2>
+                    </div>
+                </div>
+                <div class="card" id="Palms" onclick="navigateTo('https://thealdenglobal.com/ai-segregation/onplams.php')">
+                    <div class="card-content">
+                        <img src="image\palms-logo.jpg" alt="">
+                        <h2>Palms</h2>
+                    </div>
+                </div>
+        </div>    
+        <div id="loading-spinner" style="display: none;">...</div>
 
-
-        <button type="submit" value="" id="searchForm"/> <i class="fa fa-search fa-s" style=""></i></button>
-        <div id="returnmessage" style="width: 192px;
-    background: #fff;
-    border-bottom-left-radius: 20px;
-    padding: 20px;
-    margin-left: 60px;
-    margin-top: -2px;
-    border-bottom-right-radius: 20px;"></div>
+</div>
+    
      
-        </div>
     </div>
  <div class="form-group">
     <!-- Submit button -->
     <br/>
-    <input type="submit" name="submit" value="Submit" style="display:none;">
     </div>
 </form>
 
@@ -656,7 +791,7 @@
           </div>
            <div class="shipsy" >
               <div class="s-mid">
-               <img src="https://thealdenglobal.com/ai-segregation/image/saddle.jpeg" width="150" style="padding: 20px 20px 10px 20px;"/><br/>
+               <img src="image\saddle.jpeg" width="150" style="padding: 20px 20px 10px 20px;"/><br/>
                <a href="https://thealdenglobal.com/ai-segregation/saddle-point.php" class="cool-link1" style="background:#77B747;color:#fff;display: inline-block;padding: 7px 25px;">Read More</a>
               </div>
           </div>
