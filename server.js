@@ -66,12 +66,42 @@ async function preprocessData(rawData) {
       }));
 
 
-      for (let row of Data) {
-        if (!row.embedding) {
-            row.embedding = await getEmbedding(row.keywords); 
-            row.suggestions = await getSuggestions(row.keywords); 
+      const All_Data = 'All_Data.json';
+        let savedEmbeddings = {};
+
+        try {
+            const fileContent = await fs.readFile(All_Data, 'utf-8');
+            savedEmbeddings = JSON.parse(fileContent);
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error('Error reading embeddings file:', error.message);
+                throw error;
+            }
         }
-      }
+        for (let row of Data) {
+            if (savedEmbeddings[row.keywords]) {
+                row.embedding = savedEmbeddings[row.keywords].embedding;
+                row.suggestions = savedEmbeddings[row.keywords].suggestions;
+            } else {
+                console.log('Computing embeddings for new data...');
+                row.embedding = await getEmbedding(row.keywords);
+                row.suggestions = await getSuggestions(row.keywords);
+
+                savedEmbeddings[row.keywords] = {
+                    companyId: row.companyId,
+                    lead: row.lead,
+                    overview: row.overview,
+                    aldenSector: row.aldenSector,
+                    keybenefits: row.keybenefits,
+                    keyFeatures: row.keyFeatures,
+                    challenges: row.challenges,
+                    suggestions: row.suggestions,
+                    embedding: row.embedding
+                };
+            }
+        }
+
+        await fs.writeFile(All_Data, JSON.stringify(savedEmbeddings, null, 2));
 
       console.log('Preprocessing step is Done')
       return Data;
