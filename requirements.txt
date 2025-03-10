@@ -1,0 +1,10 @@
+streamlit
+pandas
+pymysql
+numpy
+rembg
+Pillow
+io
+zipfile36
+os
+onnxruntime
