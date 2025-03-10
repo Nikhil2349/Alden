@@ -1,9 +1,8 @@
-streamlit
-pandas
-pymysql
-numpy
-rembg
-Pillow
-zipfile36
-os
-onnxruntime
+streamlit==1.43.1
+pandas==2.2.3
+pymysql==1.1.1
+numpy==2.2.3
+rembg==2.0.64
+Pillow==11.1.0
+zipfile36==0.1.3
+onnxruntime==1.16.3 
