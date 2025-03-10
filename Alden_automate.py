@@ -8,10 +8,6 @@ import io
 import zipfile
 import os
 
-import requests
-ip = requests.get("https://api64.ipify.org?format=json").json()["ip"]
-st.write(f"Your App's Public IP: {ip}")
-
 # Database connection details
 DB_HOST = "118.139.166.84"
 DB_USER = "aibasedsols_aldenglobal"
